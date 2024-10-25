@@ -21,3 +21,7 @@ The services can be implemented using any programming language.
 * Provide a solution for the described problem and give us the instructions necessary to execute it
 * We would like to have your solution in form of a Pull Request into the main repository
 * _What should the Gateway do if no Storage Services are running?_
+
+## Decision Log
+You can find the decision log for this project at the following link: [Decision Log](docs/DECISION_LOG.md).
+
