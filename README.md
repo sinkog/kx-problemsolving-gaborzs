@@ -25,3 +25,58 @@ The services can be implemented using any programming language.
 ## Decision Log
 You can find the decision log for this project at the following link: [Decision Log](docs/DECISION_LOG.md).
 
+## Project Structure
+### Git
+The project will be implemented using a git monorepo structure as follows:
+
+```
+main
+├── f
+│   └── ...
+├── storage-service
+│   ├── main
+│   └── f
+│       └── ...
+└── gateway-service
+│   ├── main
+│   └── f
+│       └── ...
+```
+
+- **main**: Represents the main branch, which contains the core files and documentation for the project.
+- **f**: Feature directory that contains various tasks and developments related to the project.
+- **storage-service**: Directory for the storage service, containing the main files for the storage service and its associated feature directory.
+- **gateway-service**: Directory for the gateway service, containing the main files for the gateway service and its associated feature directory.
+
+This structure allows for a logical and clear arrangement of the projects, facilitating development processes and the management of different functionalities.
+
+Here’s the project structure in English, with the `f` directory removed since the development is happening in a single step:
+
+### Directorys
+The project will be implemented using a directory structure as follows:
+
+```
+main
+├── docs
+│   └── <general documentation files>
+├── storage-service
+│   ├── docs
+│   │   └── <storage service documentation files>
+│   └── src
+│       └── <storage service source files>
+└── gateway-service
+|   ├── docs
+│   |   └── <gateway service documentation files>
+|   └── src
+|       └── <gateway service source files>
+```
+
+- **docs**: A top-level directory for general project documentation.
+- **storage-service**: Directory for the storage service, containing:
+  - **docs**: Documentation files specific to the storage service.
+  - **src**: Source files for the storage service.
+- **gateway-service**: Directory for the gateway service, containing:
+  - **docs**: Documentation files specific to the gateway service.
+  - **src**: Source files for the gateway service.
+
+This structure allows for a logical and clear arrangement of the projects, facilitating development processes and the management of different functionalities.
