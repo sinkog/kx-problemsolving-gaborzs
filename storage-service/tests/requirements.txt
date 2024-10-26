@@ -1,0 +1,6 @@
+-r ../src/requirements.txt
+Flask-Testing==0.8.1
+pylint==3.3.1
+flake8==7.1.1
+Black==24.10.0
+Isort=5.13.2
