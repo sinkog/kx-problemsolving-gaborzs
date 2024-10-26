@@ -1,0 +1,41 @@
+# Step 1: Create a testing image
+FROM python:3.11 AS test
+
+# Set the working directory
+WORKDIR /app
+
+# Copy requirements and source code
+COPY tests/*.py ./tests/
+COPY tests/requirements.txt ./tests
+COPY src/*.py ./src/
+COPY src/requirements.txt ./src/requirements.txt
+
+# Install dependencies
+RUN echo "Installing dependencies..." && \
+    pip install -r ./tests/requirements.txt && \
+    echo "Dependencies installed."
+
+# Run code quality checks
+RUN echo "Running code checks..." && \
+    black --check src/app.py && \
+    isort --check-only src/app.py && \
+    flake8 src/ && \
+    pylint src/ && \
+    echo "Code checks completed successfully."
+
+# Step 2: Create a minimal runtime image
+FROM python:3.11-slim AS runtime
+
+# Set the working directory
+WORKDIR /app
+
+# Copy only the necessary files
+COPY --from=test /app/src/ ./src/
+
+# Install runtime dependencies (only necessary for execution)
+RUN echo "Installing runtime dependencies..." && \
+    pip install -r ./src/requirements.txt && \
+    echo "Runtime dependencies installed."
+
+# Start the application
+CMD ["python", "-m", "src.app"]
