@@ -1,1 +1,5 @@
 /storage-service/src/p_venv/
+/storage-service/src/__pycache__/
+
+/storage-service/tests/p_venv/
+/storage-service/tests/__pycache__/
