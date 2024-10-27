@@ -1,3 +1,6 @@
+"""
+gateway-service testing
+"""
 import re
 import unittest
 from unittest.mock import AsyncMock, patch
@@ -5,16 +8,16 @@ from unittest.mock import AsyncMock, patch
 from aioresponses import aioresponses
 from aiohttp import ClientError
 
-from src.app import (Flask, ServiceStatus, aiohttp, asyncio, check_service,
-                     func_run, http_req_get_data, http_req_status,
-                     initialize_services, logging, monitor_service,
-                     monitor_services, os, service_statuses)
+from src.app import (Flask, ServiceStatus, check_service,monitor_service,
+                     http_req_get_data, http_req_status,monitor_services,
+                     initialize_services, logging, os, service_statuses)
 
 
 class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
-
+    """ test class """
     @patch.dict(os.environ, {"STORAGE_SERVICES": "http://service1,http://service2"})
     async def test_initialize_services(self):
+        """ initialize service test """
         global service_statuses
         storage_services, service_statuses = initialize_services()
 
@@ -31,6 +34,7 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
     @patch.dict(os.environ, {"STORAGE_SERVICES": "http://service1,http://service2"})
     @patch("aiohttp.ClientSession.get")
     async def test_check_service_error_handling(self, mock_get):
+        """ chack service test 1 """
         global service_statuses
         storage_services, service_statuses = initialize_services()
 
@@ -52,6 +56,7 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
     @patch("aiohttp.ClientSession.get")
     @patch.dict(os.environ, {"STORAGE_SERVICES": "http://service1,http://service2"})
     async def test_check_service_available(self, mock_get):
+        """ chack service test 2 """
         storage_services, service_statuses = initialize_services()
 
         # Set up the mock response for a successful response
@@ -73,6 +78,7 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
     @patch.dict(os.environ, {"STORAGE_SERVICES": "http://service1,http://service2"})
     @patch("aiohttp.ClientSession.get")
     async def test_check_service_unavailable(self, mock_get):
+        """ chack service test 3 """
         global service_statuses  # Hivatkozunk a globális változóra
         storage_services, service_statuses = initialize_services()
 
@@ -96,13 +102,13 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
     @patch.dict(os.environ, {"STORAGE_SERVICES": "http://service1,http://service2"})
     @patch("src.app.monitor_service", new_callable=AsyncMock)
     async def test_monitor_services_calls_check_service(self, mock_check_service):
+        """ monitor services function test """
         global storage_services
         global service_statuses
         storage_services, service_statuses = initialize_services()
         logging.debug(f"{storage_services}")
 
         # Call the monitor_services function
-        from src.app import monitor_services
 
         await monitor_services()
 
@@ -119,14 +125,13 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
     async def test_monitor_service_calls_check_service(
         self, mock_check_service, mock_check_sleep
     ):
+        """ monitor service test """
         global storage_services
         global service_statuses
         global func_run
         storage_services, service_statuses = initialize_services(False)
         service_statuses = {"storage_service_1": ServiceStatus.AVAILABLE}
         logging.debug(service_statuses)
-
-        from src.app import monitor_service
 
         await monitor_service("http://service1", "storage_service_1")
 
@@ -144,9 +149,9 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
 
     @patch.dict(os.environ, {"STORAGE_SERVICES": "http://service1,http://service2"})
     def test_http_get_status_check(self):
+        """ http get /status test """
         global storage_services
         global service_statuses
-        global func_run
         storage_services, service_statuses = initialize_services(False)
         service_statuses["storage_service_1"] = ServiceStatus.AVAILABLE
         app = Flask(__name__)
@@ -163,13 +168,16 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
     @patch.dict(
         os.environ,
         {
-            "STORAGE_SERVICES": "http://service1,http://service2,http://service3,http://service4,http://service5"
+            "STORAGE_SERVICES": (
+                "http://service1,http://service2,"
+                "http://service3,http://service4,http://service5"
+            )
         },
     )
     async def test_http_req_get_data1(self):
+        """ http get /data path 1. test """
         global storage_services
         global service_statuses
-        global func_run
 
         storage_services, service_statuses = initialize_services(False)
         service_statuses["storage_service_1"] = ServiceStatus.AVAILABLE
@@ -189,13 +197,16 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
     @patch.dict(
         os.environ,
         {
-            "STORAGE_SERVICES": "http://service1,http://service2,http://service3,http://service4,http://service5"
+            "STORAGE_SERVICES": (
+                "http://service1,http://service2,"
+                "http://service3,http://service4,http://service5"
+            )
         },
     )
     async def test_http_req_get_data2(self):
+        """ http get /data path 2. test """
         global storage_services
         global service_statuses
-        global func_run
 
         storage_services, service_statuses = initialize_services(False)
         service_statuses["storage_service_1"] = ServiceStatus.AVAILABLE
@@ -245,94 +256,58 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(status, 200)
             self.assertEqual(content, test_response_text)
 
+    async def run_mock_test(self, test_url, test_response_text):
+        """Helper function to mock HTTP GET requests and validate response."""
+        with aioresponses() as mock:
+            mock.get(re.compile(r".*"), status=200, body=test_response_text)
+            url, status, content = await http_req_get_data()
+
+            self.assertEqual(str(url), test_url)
+            self.assertEqual(status, 200)
+            self.assertEqual(content, test_response_text)
+
     @patch.dict(
         os.environ,
         {
-            "STORAGE_SERVICES": "http://service1,http://service2,http://service3,http://service4,http://service5"
+            "STORAGE_SERVICES": (
+                "http://service1,http://service2,"
+                "http://service3,http://service4,http://service5"
+            )
         },
     )
     async def test_http_req_get_data3(self):
+        """ http get /data path 3. test """
         global storage_services
         global service_statuses
-        global func_run
 
         storage_services, service_statuses = initialize_services(False)
         service_statuses["storage_service_1"] = ServiceStatus.AVAILABLE
         service_statuses["storage_service_2"] = ServiceStatus.AVAILABLE
         service_statuses["storage_service_4"] = ServiceStatus.AVAILABLE
 
-        test_url = "http://service1/data"
-        test_response_text = "Mocked response content"
+        await self.run_mock_test("http://service1/data", "Mocked response content")
+        await self.run_mock_test("http://service2/data", "Mocked response content")
+        await self.run_mock_test("http://service4/data", "Mocked response content")
 
-        with aioresponses() as mock1:
-            mock1.get(re.compile(r".*"), status=200, body=test_response_text)
-
-            test_url = "http://service1/data"
-            url, status, content = await http_req_get_data()
-
-            self.assertEqual(str(url), test_url)
-            self.assertEqual(status, 200)
-            self.assertEqual(content, test_response_text)
-
-        with aioresponses() as mock2:
-            mock2.get(re.compile(r".*"), status=200, body=test_response_text)
-
-            test_url = "http://service2/data"
-            url, status, content = await http_req_get_data()
-
-            self.assertEqual(str(url), test_url)
-            self.assertEqual(status, 200)
-            self.assertEqual(content, test_response_text)
-
-        with aioresponses() as mock4:
-            mock4.get(re.compile(r".*"), status=200, body=test_response_text)
-
-            test_url = "http://service4/data"
-            url, status, content = await http_req_get_data()
-
-            self.assertEqual(str(url), test_url)
-            self.assertEqual(status, 200)
-            self.assertEqual(content, test_response_text)
-
+        # Szolgáltatás státuszának módosítása és újabb tesztek
         service_statuses["storage_service_1"] = ServiceStatus.UNAVAILABLE
-        with aioresponses() as mock41:
-            mock41.get(re.compile(r".*"), status=200, body=test_response_text)
-
-            test_url = "http://service4/data"
-            url, status, content = await http_req_get_data()
-
-            self.assertEqual(str(url), test_url)
-            self.assertEqual(status, 200)
-            self.assertEqual(content, test_response_text)
-        with aioresponses() as mock21:
-            mock21.get(re.compile(r".*"), status=200, body=test_response_text)
-
-            test_url = "http://service2/data"
-            url, status, content = await http_req_get_data()
-
-            self.assertEqual(str(url), test_url)
-            self.assertEqual(status, 200)
-            self.assertEqual(content, test_response_text)
-        with aioresponses() as mock42:
-            mock42.get(re.compile(r".*"), status=200, body=test_response_text)
-
-            test_url = "http://service4/data"
-            url, status, content = await http_req_get_data()
-
-            self.assertEqual(str(url), test_url)
-            self.assertEqual(status, 200)
-            self.assertEqual(content, test_response_text)
+        await self.run_mock_test("http://service4/data", "Mocked response content")
+        await self.run_mock_test("http://service2/data", "Mocked response content")
+        await self.run_mock_test("http://service4/data", "Mocked response content")
 
     @patch.dict(
         os.environ,
         {
-            "STORAGE_SERVICES": "http://service1,http://service2,http://service3,http://service4,http://service5"
+            "STORAGE_SERVICES": (
+                "http://service1,http://service2,"
+                "http://service3,http://service4,http://service5"
+            )
         },
     )
     async def test_http_req_get_data4(self):
+        """ http get /data path 4. test """
         global storage_services
         global service_statuses
-        global func_run
 
         storage_services, service_statuses = initialize_services(False)
         service_statuses["storage_service_1"] = ServiceStatus.AVAILABLE
@@ -385,6 +360,7 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
 
 
 def suite():
+    """ running tests """
     suite = unittest.TestSuite()
     suite.addTest(TestServiceMonitoring("test_services"))
     return suite
