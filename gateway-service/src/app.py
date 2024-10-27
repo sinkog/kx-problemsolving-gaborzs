@@ -83,15 +83,36 @@ def http_req_status():
 
 @app.route('/data', methods=['GET'])
 async def http_req_get_data(retry_count=0):
-    url = "http://service1/status"
+    logging.debug(service_statuses)
+    """Fetch data from the currently available storage service in round-robin order."""
+    global current_service_index
+    logging.debug(f"index {current_service_index}")
+    available_services = [
+        service for idx, service in enumerate(storage_services)
+        if service_statuses[f"storage_service_{idx + 1}"] == ServiceStatus.AVAILABLE
+    ]
+    logging.debug(available_services)
+
+    if not available_services:
+        return jsonify({"error": "No storage services available"}), 503
+    logging.debug(f"urls: {available_services}")
+
+    # Get the current service based on round-robin
+    url = available_services[current_service_index % len(available_services)]
+    logging.debug(f"url: {url}")
+    start_time = asyncio.get_event_loop().time()
     async with aiohttp.ClientSession() as session:
       try:
         logging.debug("1")
-        async with session.get(f"{url}") as response:
+        async with session.get(f"{url}/data") as response:
           logging.debug("2")
+          logging.debug(response.url)
           if response.status == 200:
             logging.debug("3")
-            return await response.json()
+            logging.debug(response.url)
+            current_service_index += 1
+            return response.url, response.status, await response.text()
+#            return await response.json()
           else:
             logging.debug("4")
             logging.debug(response.status)
