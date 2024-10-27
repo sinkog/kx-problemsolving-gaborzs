@@ -2,7 +2,7 @@ import unittest
 
 import pytest
 from unittest.mock import patch, AsyncMock
-from src.app import initialize_services, check_service, ServiceStatus, service_statuses, func_run, monitor_services, monitor_service, aiohttp, asyncio, os
+from src.app import logging, initialize_services, check_service, ServiceStatus, service_statuses, http_req_status, func_run, monitor_services, monitor_service, aiohttp, asyncio, os
 
 
 class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
@@ -35,14 +35,13 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
         await check_service("http://service1", "storage_service_1")
 
         # Verify that the service status remains UNAVAILABLE
-        print(f"una {service_statuses}")
+        logging.debug(f"{service_statuses}")
         self.assertEqual(service_statuses["storage_service_1"], ServiceStatus.UNAVAILABLE)
         self.assertEqual(service_statuses["storage_service_2"], ServiceStatus.UNAVAILABLE)
 
     @patch("aiohttp.ClientSession.get")
     @patch.dict(os.environ, {"STORAGE_SERVICES": "http://service1,http://service2"})
     async def test_check_service_available(self, mock_get):
-        print("storage_services, service_statuses = initialize_services")
         storage_services, service_statuses = initialize_services()
 
         # Set up the mock response for a successful response
@@ -56,7 +55,7 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
 
 
         # Verify that the service status has become AVAILABLE
-        print(f"tcsa: {service_statuses}")
+        logging.debug(f"{service_statuses}")
         self.assertEqual(service_statuses["storage_service_1"], ServiceStatus.AVAILABLE)
         self.assertEqual(service_statuses["storage_service_2"], ServiceStatus.UNAVAILABLE)
 
@@ -75,7 +74,7 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
         await check_service("http://service2", "storage_service_2")
 
         # Verify that the service status remains UNAVAILABLE
-        print(f"una {service_statuses}")
+        logging.debug(f"{service_statuses}")
         self.assertEqual(service_statuses["storage_service_1"], ServiceStatus.UNAVAILABLE)
         self.assertEqual(service_statuses["storage_service_2"], ServiceStatus.UNAVAILABLE)
 
@@ -85,7 +84,7 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
         global storage_services
         global service_statuses
         storage_services, service_statuses = initialize_services()
-        print(f"tmscs: {storage_services}")
+        logging.debug(f"{storage_services}")
 
         # Call the monitor_services function
         from src.app import monitor_services
@@ -102,18 +101,15 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
     @patch("src.app.asyncio.sleep", new_callable=AsyncMock)
     @patch("src.app.check_service", new_callable=AsyncMock)
     async def test_monitor_service_calls_check_service(self, mock_check_service, mock_check_sleep):
-       print("XYXYXYXYXYX")
        global storage_services
        global service_statuses
        global func_run
        storage_services, service_statuses = initialize_services(False)
        service_statuses = {'storage_service_1': ServiceStatus.AVAILABLE}
-       print(service_statuses)
+       logging.debug(service_statuses)
 
        from src.app import monitor_service
-       print(service_statuses)
        await monitor_service("http://service1", "storage_service_1")
-       print(service_statuses)
 
        mock_check_service.assert_any_call("http://service1", "storage_service_1")
        mock_check_sleep.assert_any_call(5)
