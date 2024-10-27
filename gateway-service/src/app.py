@@ -28,6 +28,8 @@ def initialize_services(function_run=True):
   logging.debug(f"{service_statuses}")
   global func_run
   func_run = function_run
+  global current_service_index
+  current_service_index = 0
   return storage_services, service_statuses
 
 async def check_service(url, service_name):
