@@ -8,6 +8,7 @@ app = Flask(__name__)
 
 storage_services = []
 service_statuses = {}
+func_run = True
 
 # Enum for service status
 class ServiceStatus(Enum):
@@ -15,7 +16,7 @@ class ServiceStatus(Enum):
     UNAVAILABLE = "unavailable"
 
 # Storage service URLs
-def initialize_services():
+def initialize_services(function_run=True):
   global storage_services
   storage_services = os.getenv("STORAGE_SERVICES", "").split(",") if os.getenv("STORAGE_SERVICES") else []
   print(f"init {storage_services}")
@@ -23,6 +24,8 @@ def initialize_services():
   global service_statuses
   service_statuses = {f"storage_service_{idx + 1}": ServiceStatus.UNAVAILABLE for idx in range(len(storage_services))}
   print(f"init {service_statuses}")
+  global func_run
+  func_run = function_run
   return storage_services, service_statuses
 
 async def check_service(url, service_name):
@@ -52,11 +55,28 @@ async def check_service(url, service_name):
             service_statuses[service_name] = ServiceStatus.UNAVAILABLE
             print(service_statuses)
 
+async def monitor_service(url, service_name):
+    global func_run
+    global service_statuses
+    run = True
+    while run:
+        await check_service(url, service_name)
+        print(func_run)
+        if  service_statuses[service_name] == ServiceStatus.AVAILABLE:
+            print(f"{service_name} is available. Checking again in 1 second.")
+            await asyncio.sleep(1)
+        else:
+            print(f"{service_name} is not available. Checking again in 5 seconds.")
+            await asyncio.sleep(5)
+        run = func_run
 
 async def monitor_services():
     print(f"ms: {storage_services}")
-    tasks = [check_service(url, f"storage_service_{idx + 1}") for idx, url in enumerate(storage_services)]
+    tasks = [monitor_service(url, f"storage_service_{idx + 1}") for idx, url in enumerate(storage_services)]
     print("Tasks being created:", tasks)
     await asyncio.gather(*tasks)
 
-storage_services, service_statuses = initialize_services()
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.create_task(monitor_services())  # Start monitoring services in the background
+#await monitor_services()
