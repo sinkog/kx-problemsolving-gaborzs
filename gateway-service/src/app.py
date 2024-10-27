@@ -1,16 +1,15 @@
 import asyncio
 import logging
 import os
+from enum import Enum
 
 import aiohttp
+from flask import Flask, jsonify
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(funcName)s - %(message)s",
 )
-from enum import Enum
-
-from flask import Flask, jsonify
 
 app = Flask(__name__)
 
@@ -83,7 +82,8 @@ async def monitor_service(url, service_name):
     while run:
         await check_service(url, service_name)
         if service_statuses[service_name] == ServiceStatus.AVAILABLE:
-            logging.debug(f"{service_name} is available. Checking again in 1 second.")
+            logging.debug(
+                f"{service_name} is available. Checking again in 1 second.")
             await asyncio.sleep(1)
         else:
             logging.debug(
@@ -128,10 +128,10 @@ async def http_req_get_data(retry_count=0):
     logging.debug(f"urls: {available_services}")
 
     # Get the current service based on round-robin
-    start_time = asyncio.get_event_loop().time()
     async with aiohttp.ClientSession() as session:
         while retry_count < 3 and len(available_services) > 0:
-            url = available_services[current_service_index % len(available_services)]
+            url = available_services[current_service_index %
+                                     len(available_services)]
             logging.debug(f"url: {url}")
             try:
                 logging.debug("1")
@@ -147,7 +147,8 @@ async def http_req_get_data(retry_count=0):
                         current_service_index += 1
                         available_services.remove(f"{url}")
                         logging.debug("4")
-                        logging.debug(f"avialbe_services: {available_services}")
+                        logging.debug(
+                            f"avialbe_services: {available_services}")
             except Exception:
                 logging.debug("5")
                 current_service_index += 1
@@ -158,5 +159,6 @@ async def http_req_get_data(retry_count=0):
 storage_services, service_statuses = initialize_services()
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
-    loop.create_task(monitor_services())  # Start monitoring services in the background
+    # Start monitoring services in the background
+    loop.create_task(monitor_services())
     app.run(host="0.0.0.0", port=5000)
