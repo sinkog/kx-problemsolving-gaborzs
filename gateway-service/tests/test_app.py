@@ -2,7 +2,7 @@ import unittest
 
 import pytest
 from unittest.mock import patch, AsyncMock
-from src.app import logging, initialize_services, check_service, ServiceStatus, service_statuses, http_req_status, func_run, monitor_services, monitor_service, aiohttp, asyncio, os
+from src.app import http_req_get_data, logging, initialize_services, check_service, ServiceStatus, service_statuses, http_req_status, func_run, monitor_services, monitor_service, aiohttp, asyncio, os
 
 
 class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
@@ -124,7 +124,7 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
        self.assertEqual(mock_check_sleep.call_count, 2)
 
     @patch.dict(os.environ, {"STORAGE_SERVICES": "http://service1,http://service2"})
-    def http_req_status_check(self):
+    def http_get_status_check(self):
        global storage_services
        global service_statuses
        global func_run
@@ -137,7 +137,24 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
          expected_data = {'storage_service_1': 'available', 'storage_service_2': 'unavailable'}
          self.assertEqual(data, expected_data)
 
+    @patch('aiohttp.ClientSession.get')
+    #@patch.dict(os.environ, {"STORAGE_SERVICES": "http://service1,http://service2,http://service3,http://service4,http://service5"})
+    async def http_req_get_data(self, mock_get):
+        """Test successful data retrieval from http://service1/status."""
+        # Beállítjuk a mock választ
+        mock_response = AsyncMock()
+        mock_response.status = 200
+        mock_response.json.return_value = {"data": "some data"}
+        mock_get.return_value.__aenter__.return_value = mock_response
 
+        # Set up the mock session and the get call to return mock_response
+
+        # Call the async function
+        result = await http_req_get_data()
+        logging.debug(result)
+
+        # Assert the expected outcome
+        self.assertEqual(result, {"data": "some data"})
 
 
 def suite():
