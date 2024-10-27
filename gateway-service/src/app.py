@@ -100,29 +100,31 @@ async def http_req_get_data(retry_count=0):
     logging.debug(f"urls: {available_services}")
 
     # Get the current service based on round-robin
-    url = available_services[current_service_index % len(available_services)]
-    logging.debug(f"url: {url}")
     start_time = asyncio.get_event_loop().time()
     async with aiohttp.ClientSession() as session:
-      try:
-        logging.debug("1")
-        async with session.get(f"{url}/data") as response:
-          logging.debug("2")
-          logging.debug(response.url)
-          if response.status == 200:
-            logging.debug("3")
+      while retry_count < 3 and len(available_services) > 0:
+        url = available_services[current_service_index % len(available_services)]
+        logging.debug(f"url: {url}")
+        try:
+          logging.debug("1")
+          async with session.get(f"{url}/data") as response:
+            logging.debug("2")
             logging.debug(response.url)
-            current_service_index += 1
-            return response.url, response.status, await response.text()
-#            return await response.json()
-          else:
-            logging.debug("4")
-            logging.debug(response.status)
-      except Exception:
-        logging.debug("5")
-
-
-
+            if response.status == 200:
+              logging.debug("3")
+              logging.debug(response.url)
+              current_service_index += 1
+              return response.url, response.status, await response.text()
+            else:
+              current_service_index += 1
+              available_services.remove(f"{url}")
+              logging.debug("4")
+              logging.debug(f"avialbe_services: {available_services}")
+        except Exception:
+          logging.debug("5")
+          current_service_index += 1
+        retry_count += 1
+    return jsonify({"error": "No storage services available"}), 503
 
 storage_services, service_statuses = initialize_services()
 if __name__ == '__main__':
