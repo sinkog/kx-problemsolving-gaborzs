@@ -123,5 +123,28 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
        self.assertEqual(mock_check_service.call_count, 2)
        self.assertEqual(mock_check_sleep.call_count, 2)
 
-if __name__ == "__main__":
-    unittest.main()
+    @patch.dict(os.environ, {"STORAGE_SERVICES": "http://service1,http://service2"})
+    def http_req_status_check(self):
+       global storage_services
+       global service_statuses
+       global func_run
+       storage_services, service_statuses = initialize_services(False)
+       service_statuses['storage_service_1'] = ServiceStatus.AVAILABLE
+       with app.app_context():
+         response = http_req_status()
+         data = response.get_json()
+         logging.debug(data)
+         expected_data = {'storage_service_1': 'available', 'storage_service_2': 'unavailable'}
+         self.assertEqual(data, expected_data)
+
+
+
+
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(TestServiceMonitoring('test_services'))
+    return suite
+
+if __name__ == '__main__':
+    runner = unittest.TextTestRunner()
+    runner.run(suite())
