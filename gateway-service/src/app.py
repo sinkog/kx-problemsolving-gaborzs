@@ -75,7 +75,16 @@ async def monitor_services():
     logging.debug("Tasks being created:", tasks)
     await asyncio.gather(*tasks)
 
+@app.route('/status', methods=['GET'])
+def http_req_status():
+    logging.debug(f"{service_statuses}")
+    # Convert enum values to strings for JSON response
+    return jsonify({name: status.value for name, status in service_statuses.items()})
+
+
+storage_services, service_statuses = initialize_services()
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     loop.create_task(monitor_services())  # Start monitoring services in the background
+    app.run(host='0.0.0.0', port=5000)
 #await monitor_services()
