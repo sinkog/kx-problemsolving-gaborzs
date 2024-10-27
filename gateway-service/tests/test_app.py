@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import AsyncMock, patch
 
 from aioresponses import aioresponses
+from aiohttp import ClientError
 
 from src.app import (Flask, ServiceStatus, aiohttp, asyncio, check_service,
                      func_run, http_req_get_data, http_req_status,
@@ -34,7 +35,7 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
         storage_services, service_statuses = initialize_services()
 
         # Simulate an error response
-        mock_get.side_effect = Exception("Service unavailable")
+        mock_get.side_effect = ClientError("Service unavailable")
 
         # Call the check_service function
         await check_service("http://service1", "storage_service_1")

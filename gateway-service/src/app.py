@@ -1,3 +1,6 @@
+"""
+gateway service
+"""
 import asyncio
 import logging
 import os
@@ -11,35 +14,34 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(funcName)s - %(message)s",
 )
 
-app = Flask(__name__)
 
+app = Flask(__name__)
 storage_services = []
 service_statuses = {}
-func_run = True
 
 
-# Enum for service status
 class ServiceStatus(Enum):
+    """ Enum for service status """
     AVAILABLE = "available"
     UNAVAILABLE = "unavailable"
 
 
-# Storage service URLs
 def initialize_services(function_run=True):
+    """ gateway initializer """
     global storage_services
     storage_services = (
         os.getenv("STORAGE_SERVICES", "").split(",")
         if os.getenv("STORAGE_SERVICES")
         else []
     )
-    logging.debug(f"{storage_services}")
+    logging.debug(storage_services)
     # Status dictionary to keep track of services
     global service_statuses
     service_statuses = {
         f"storage_service_{idx + 1}": ServiceStatus.UNAVAILABLE
         for idx in range(len(storage_services))
     }
-    logging.debug(f"{service_statuses}")
+    logging.debug(service_statuses)
     global func_run
     func_run = function_run
     global current_service_index
@@ -48,14 +50,15 @@ def initialize_services(function_run=True):
 
 
 async def check_service(url, service_name):
-    logging.debug(f"{url}/status")
-    logging.debug(f"{service_name}")
+    """ chack service alive """
+    logging.debug("%s/status", url)
+    logging.debug(service_name)
     async with aiohttp.ClientSession() as session:
         try:
             # Check the status endpoint
             async with session.get(f"{url}/status") as response:
                 # Check if response is OK and contains "OK"
-                logging.debug(f"{response.status}")
+                logging.debug(response.status)
                 if response.status == 200:
                     json_response = await response.json()
                     if (
@@ -67,15 +70,16 @@ async def check_service(url, service_name):
                         logging.debug("<>OK")
                         service_statuses[service_name] = ServiceStatus.UNAVAILABLE
                 else:
-                    logging.debug(f"{response.status}<>200")
+                    logging.debug("%s<>200", response.status)
                     service_statuses[service_name] = ServiceStatus.UNAVAILABLE
-        except Exception:
+        except (aiohttp.ClientError, asyncio.TimeoutError):
             logging.debug("except")
             service_statuses[service_name] = ServiceStatus.UNAVAILABLE
             print(service_statuses)
 
 
 async def monitor_service(url, service_name):
+    """ service monitor scedule """
     global func_run
     global service_statuses
     run = True
@@ -83,39 +87,41 @@ async def monitor_service(url, service_name):
         await check_service(url, service_name)
         if service_statuses[service_name] == ServiceStatus.AVAILABLE:
             logging.debug(
-                f"{service_name} is available. Checking again in 1 second.")
+                "%s is available. Checking again in 1 second.",service_name)
             await asyncio.sleep(1)
         else:
             logging.debug(
-                f"{service_name} is not available. Checking again in 5 seconds."
+                "%s is not available. Checking again in 5 seconds.",service_name
             )
             await asyncio.sleep(5)
         run = func_run
 
 
 async def monitor_services():
-    logging.debug(f"{storage_services}")
+    """ service monitor root function """
+    logging.debug(storage_services)
     tasks = [
         monitor_service(url, f"storage_service_{idx + 1}")
         for idx, url in enumerate(storage_services)
     ]
-    logging.debug(f"Tasks being created: {tasks}")
+    logging.debug("Tasks being created: %s",tasks)
     await asyncio.gather(*tasks)
 
 
 @app.route("/status", methods=["GET"])
 def http_req_status():
-    logging.debug(f"{service_statuses}")
+    """ http get methods /status path """
+    logging.debug(service_statuses)
     # Convert enum values to strings for JSON response
     return jsonify({name: status.value for name, status in service_statuses.items()})
 
 
 @app.route("/data", methods=["GET"])
 async def http_req_get_data(retry_count=0):
+    """ http get /data path """
     logging.debug(service_statuses)
-    """Fetch data from the currently available storage service in round-robin order."""
     global current_service_index
-    logging.debug(f"index {current_service_index}")
+    logging.debug("index %s", current_service_index)
     available_services = [
         service
         for idx, service in enumerate(storage_services)
@@ -125,14 +131,14 @@ async def http_req_get_data(retry_count=0):
 
     if not available_services:
         return jsonify({"error": "No storage services available"}), 503
-    logging.debug(f"urls: {available_services}")
+    logging.debug("urls: %s", available_services)
 
     # Get the current service based on round-robin
     async with aiohttp.ClientSession() as session:
         while retry_count < 3 and len(available_services) > 0:
             url = available_services[current_service_index %
                                      len(available_services)]
-            logging.debug(f"url: {url}")
+            logging.debug("url: %s", url)
             try:
                 logging.debug("1")
                 async with session.get(f"{url}/data") as response:
@@ -143,13 +149,12 @@ async def http_req_get_data(retry_count=0):
                         logging.debug(response.url)
                         current_service_index += 1
                         return response.url, response.status, await response.text()
-                    else:
-                        current_service_index += 1
-                        available_services.remove(f"{url}")
-                        logging.debug("4")
-                        logging.debug(
-                            f"avialbe_services: {available_services}")
-            except Exception:
+                    current_service_index += 1
+                    available_services.remove(f"{url}")
+                    logging.debug("4")
+                    logging.debug(
+                        "avialbe_services: %s", available_services)
+            except (aiohttp.ClientError, asyncio.TimeoutError):
                 logging.debug("5")
                 current_service_index += 1
             retry_count += 1
