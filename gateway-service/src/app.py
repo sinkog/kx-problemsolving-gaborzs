@@ -72,7 +72,7 @@ async def monitor_service(url, service_name):
 async def monitor_services():
     logging.debug(f"{storage_services}")
     tasks = [monitor_service(url, f"storage_service_{idx + 1}") for idx, url in enumerate(storage_services)]
-    logging.debug("Tasks being created:", tasks)
+    logging.debug(f"Tasks being created: {tasks}")
     await asyncio.gather(*tasks)
 
 @app.route('/status', methods=['GET'])
@@ -81,10 +81,28 @@ def http_req_status():
     # Convert enum values to strings for JSON response
     return jsonify({name: status.value for name, status in service_statuses.items()})
 
+@app.route('/data', methods=['GET'])
+async def http_req_get_data(retry_count=0):
+    url = "http://service1/status"
+    async with aiohttp.ClientSession() as session:
+      try:
+        logging.debug("1")
+        async with session.get(f"{url}") as response:
+          logging.debug("2")
+          if response.status == 200:
+            logging.debug("3")
+            return await response.json()
+          else:
+            logging.debug("4")
+            logging.debug(response.status)
+      except Exception:
+        logging.debug("5")
+
+
+
 
 storage_services, service_statuses = initialize_services()
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     loop.create_task(monitor_services())  # Start monitoring services in the background
     app.run(host='0.0.0.0', port=5000)
-#await monitor_services()
