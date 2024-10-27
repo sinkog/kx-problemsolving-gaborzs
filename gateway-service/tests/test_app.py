@@ -204,7 +204,88 @@ class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(status, 200)
             self.assertEqual(content, test_response_text)
 
+        with aioresponses() as mock11:
+            mock11.get(re.compile(r'.*'), status=200, body=test_response_text)
 
+            test_url = "http://service1/data"
+            url, status, content = await http_req_get_data()
+
+            self.assertEqual(str(url), test_url)
+            self.assertEqual(status, 200)
+            self.assertEqual(content, test_response_text)
+
+    @patch.dict(os.environ, {"STORAGE_SERVICES": "http://service1,http://service2,http://service3,http://service4,http://service5"})
+    async def test_http_req_get_data3(self):
+        global storage_services
+        global service_statuses
+        global func_run
+
+        storage_services, service_statuses = initialize_services(False)
+        service_statuses['storage_service_1'] = ServiceStatus.AVAILABLE
+        service_statuses['storage_service_2'] = ServiceStatus.AVAILABLE
+        service_statuses['storage_service_4'] = ServiceStatus.AVAILABLE
+
+        test_url = "http://service1/data"
+        test_response_text = "Mocked response content"
+
+        with aioresponses() as mock1:
+            mock1.get(re.compile(r'.*'), status=200, body=test_response_text)
+
+            test_url = "http://service1/data"
+            url, status, content = await http_req_get_data()
+
+            self.assertEqual(str(url), test_url)
+            self.assertEqual(status, 200)
+            self.assertEqual(content, test_response_text)
+
+        with aioresponses() as mock2:
+            mock2.get(re.compile(r'.*'), status=200, body=test_response_text)
+
+            test_url = "http://service2/data"
+            url, status, content = await http_req_get_data()
+
+            self.assertEqual(str(url), test_url)
+            self.assertEqual(status, 200)
+            self.assertEqual(content, test_response_text)
+
+        with aioresponses() as mock4:
+            mock4.get(re.compile(r'.*'), status=200, body=test_response_text)
+
+            test_url = "http://service4/data"
+            url, status, content = await http_req_get_data()
+
+            self.assertEqual(str(url), test_url)
+            self.assertEqual(status, 200)
+            self.assertEqual(content, test_response_text)
+
+        service_statuses['storage_service_1'] = ServiceStatus.UNAVAILABLE
+        with aioresponses() as mock41:
+            mock41.get(re.compile(r'.*'), status=200, body=test_response_text)
+
+            test_url = "http://service4/data"
+            url, status, content = await http_req_get_data()
+
+            self.assertEqual(str(url), test_url)
+            self.assertEqual(status, 200)
+            self.assertEqual(content, test_response_text)
+        with aioresponses() as mock21:
+            mock21.get(re.compile(r'.*'), status=200, body=test_response_text)
+
+            test_url = "http://service2/data"
+            url, status, content = await http_req_get_data()
+
+            self.assertEqual(str(url), test_url)
+            self.assertEqual(status, 200)
+            self.assertEqual(content, test_response_text)
+        with aioresponses() as mock42:
+            mock42.get(re.compile(r'.*'), status=200, body=test_response_text)
+
+            test_url = "http://service4/data"
+            url, status, content = await http_req_get_data()
+
+            self.assertEqual(str(url), test_url)
+            self.assertEqual(status, 200)
+            self.assertEqual(content, test_response_text)
 
 
 def suite():
