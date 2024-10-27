@@ -1,14 +1,16 @@
-import os
 import asyncio
-import aiohttp
 import logging
+import os
+
+import aiohttp
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(funcName)s - %(message)s",
 )
-from flask import Flask, jsonify
 from enum import Enum
+
+from flask import Flask, jsonify
 
 app = Flask(__name__)
 
