@@ -1,0 +1,10 @@
+-r ../src/requirements.txt
+Black==24.10.0
+Flask-Testing==0.8.1
+Isort==5.13.2
+aioresponses==0.7.6
+flake8==7.1.1
+pylint==3.3.1
+pytest-asyncio==0.24.0
+pytest==8.3.3
+
