@@ -1,23 +1,13 @@
-import unittest
-from unittest.mock import patch, AsyncMock
 import re
+import unittest
+from unittest.mock import AsyncMock, patch
+
 from aioresponses import aioresponses
-from src.app import (
-    http_req_get_data,
-    logging,
-    initialize_services,
-    check_service,
-    ServiceStatus,
-    service_statuses,
-    http_req_status,
-    func_run,
-    monitor_services,
-    monitor_service,
-    aiohttp,
-    asyncio,
-    os,
-    Flask,
-)
+
+from src.app import (Flask, ServiceStatus, aiohttp, asyncio, check_service,
+                     func_run, http_req_get_data, http_req_status,
+                     initialize_services, logging, monitor_service,
+                     monitor_services, os, service_statuses)
 
 
 class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
