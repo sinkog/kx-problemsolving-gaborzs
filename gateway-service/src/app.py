@@ -113,7 +113,9 @@ class ServiceRouter:
             if self.manager.service_statuses[
                 f"storage_service_{idx + 1}"] == ServiceStatus.AVAILABLE
         ]
+        logging.debug("available_services: %s", available_services)
         if not available_services:
+            logging.debug("No storage services available/1")
             return jsonify({"error": "No storage services available"}), 503
 
         async with aiohttp.ClientSession(
@@ -122,16 +124,22 @@ class ServiceRouter:
             while retry_count < 3 and available_services:
                 url = available_services[self.current_service_index % len(
                     available_services)]
+                logging.debug("url: %s", url)
                 try:
+                    logging.debug("try")
                     async with session.get(f"{url}/data") as response:
                         if response.status == 200:
+                            logging.debug('%s/data:200', url)
                             self.current_service_index += 1
-                            return await response.json(), response.status
+                            return f"{url}/data", response.status, await response.json()
+                        logging.debug('%s/data: %s <> 200', url, response.status)
                         self.current_service_index += 1
                         available_services.remove(url)
-                except (aiohttp.ClientError, asyncio.TimeoutError):
+                except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                    logging.debug('%s/data except: %s ', url, e)
                     self.current_service_index += 1
                 retry_count += 1
+        logging.debug("No storage services available/2")
         return jsonify({"error": "No storage services available"}), 503
 
     def get_status(self):
