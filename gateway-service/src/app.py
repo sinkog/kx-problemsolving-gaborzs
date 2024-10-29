@@ -91,6 +91,48 @@ class ServiceMonitor:
         ]
         await asyncio.gather(*tasks)
 
+class ServiceRouter:
+    """Handles data requests and implements round-robin logic."""
+
+    def __init__(self, manager):
+        self.manager = manager
+        self.current_service_index = 0
+
+    async def get_data(self, retry_count=0):
+        """Handles HTTP GET requests on /data path."""
+        available_services = [
+            service
+            for idx, service in enumerate(self.manager.storage_services)
+            if self.manager.service_statuses[
+                f"storage_service_{idx + 1}"] == ServiceStatus.AVAILABLE
+        ]
+        if not available_services:
+            return jsonify({"error": "No storage services available"}), 503
+
+        async with aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=REQUEST_TIMEOUT)
+        ) as session:
+            while retry_count < 3 and available_services:
+                url = available_services[self.current_service_index % len(
+                    available_services)]
+                try:
+                    async with session.get(f"{url}/data") as response:
+                        if response.status == 200:
+                            self.current_service_index += 1
+                            return await response.json(), response.status
+                        self.current_service_index += 1
+                        available_services.remove(url)
+                except (aiohttp.ClientError, asyncio.TimeoutError):
+                    self.current_service_index += 1
+                retry_count += 1
+        return jsonify({"error": "No storage services available"}), 503
+
+    def get_status(self):
+        """Returns the statuses of all services."""
+        return {
+            name: status.value
+            for name, status in self.manager.service_statuses.items()
+        }
 
 
 
