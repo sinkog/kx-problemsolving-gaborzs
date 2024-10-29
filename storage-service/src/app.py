@@ -21,7 +21,7 @@ def get_data():
     return jsonify(data)
 
 
-@app.route("/state", methods=["GET"])
+@app.route("/status", methods=["GET"])
 def get_state():
     """
     Get the current state of the service.
