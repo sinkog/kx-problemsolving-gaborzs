@@ -1,0 +1,49 @@
+version: '3.8'  # Docker Compose version
+
+services:
+  gateway-service:
+    build:
+      context: ./gateway-service  # Current directory where the Dockerfile is located
+      dockerfile: Dockerfile  # Name of the Dockerfile
+    ports:
+      - "8080:5000"  # Gateway's 5000 port is mapped to the host's 8080 port
+    environment:
+      - STORAGE_SERVICES=http://storage1:5000,http://storage2:5000,http://storage3:5000  # URLs for the storage services
+      - LOG_LEVEL=DEBUGgit
+    networks:
+      - my-network  # Network to connect to
+    restart: always  # Restart the application in case of failure
+
+  storage1:
+    build:
+      context: ./storage-service  # Path to the storage image Dockerfile
+      dockerfile: Dockerfile  # Name of the Dockerfile
+    ports:
+      - "5001:5000"  # URL for storage1
+    networks:
+      - my-network  # Network to connect to
+    restart: always  # Restart the application in case of failure
+
+  storage2:
+    build:
+      context: ./storage-service  # Path to the storage image Dockerfile
+      dockerfile: Dockerfile  # Name of the Dockerfile
+    ports:
+      - "5002:5000"  # URL for storage2
+    networks:
+      - my-network  # Network to connect to
+    restart: always  # Restart the application in case of failure
+
+  storage3:
+    build:
+      context: ./storage-service  # Path to the storage image Dockerfile
+      dockerfile: Dockerfile  # Name of the Dockerfile
+    ports:
+      - "5003:5000"  # URL for storage3
+    networks:
+      - my-network  # Network to connect to
+    restart: always  # Restart the application in case of failure
+
+networks:
+  my-network:
+    driver: bridge  # Network driver, bridge is the most common
