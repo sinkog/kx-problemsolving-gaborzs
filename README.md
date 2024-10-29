@@ -80,3 +80,47 @@ main
   - **src**: Source files for the gateway service.
 
 This structure allows for a logical and clear arrangement of the projects, facilitating development processes and the management of different functionalities.
+
+## Dependencies
+The following dependencies are required and configured:
+- Docker
+- Docker Compose
+- curl
+
+## Usage
+
+- **Static**:
+    - Configurable parameter: `LOG_LEVEL=DEBUG`
+    - Build the containers:
+      ```bash
+      docker-compose build
+      ```
+    - Start the services:
+      ```bash
+      docker-compose up
+      ```
+
+- **Dynamic**:
+    - Run with dynamic options:
+      ```bash
+      ./dynamic-compose.sh -n 5 -l DEBUG
+      ```
+    - Build with dynamic configuration:
+      ```bash
+      docker-compose -f dyn-docker-compose.yaml build
+      ```
+    - Start with dynamic configuration:
+      ```bash
+      docker-compose -f dyn-docker-compose.yaml up
+      ```
+
+## Testing
+To test the setup, you can use the following curl commands:
+- Fetch data:
+  ```bash
+  curl localhost:8080/data
+  ```
+- Check service status:
+  ```bash
+  curl localhost:8080/status
+  ```
