@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, patch
 from aioresponses import aioresponses
 from aiohttp import ClientError
 
-from src.app import (ServiceManager,
+from src.app import (ServiceManager, ServiceMonitor,
                      Flask, ServiceStatus, check_service,monitor_service,
                      http_req_get_data, http_req_status,monitor_services,
                      initialize_services, logging, os, service_statuses)
@@ -30,32 +30,38 @@ class TestServiceManager(unittest.TestCase):
 
 
 class TestServiceMonitor(unittest.IsolatedAsyncioTestCase):
-    async def test_check_service_available(self):
+    @patch.dict(os.environ, {"STORAGE_SERVICES": "http://service1,http://service2"})
+    @patch("aiohttp.ClientSession.get")
+    async def test_check_service_available(self, mock_get):
         manager = ServiceManager()
         monitor = ServiceMonitor(manager)
 
         # Mock a successful HTTP response
         mock_response = AsyncMock()
         mock_response.status = 200
-        mock_response.json.return_value = {"status": "OK"}
+        mock_response.json = AsyncMock(return_value={"status": "OK"})
+        mock_get.return_value.__aenter__.return_value = mock_response
 
-        # Mock the aiohttp ClientSession and response
-        with patch("aiohttp.ClientSession.get", return_value=mock_response):
-            await monitor.check_service("http://service1", "storage_service_1")
-            self.assertEqual(manager.service_statuses["storage_service_1"], ServiceStatus.AVAILABLE)
+        # check_service hívása és állapot ellenőrzése
+        await monitor.check_service("http://service1", "storage_service_1")
 
-    async def test_check_service_unavailable(self):
+        # Ellenőrzés, hogy elérhető-e
+        self.assertEqual(manager.service_statuses["storage_service_1"], ServiceStatus.AVAILABLE)
+
+    @patch.dict(os.environ, {"STORAGE_SERVICES": "http://service1,http://service2"})
+    @patch("aiohttp.ClientSession.get")
+    async def test_check_service_unavailable(self, mock_get):
         manager = ServiceManager()
         monitor = ServiceMonitor(manager)
 
         # Mock a failed HTTP response (e.g., status 500)
         mock_response = AsyncMock()
         mock_response.status = 500
+        mock_get.return_value.__aenter__.return_value = mock_response
 
-        # Mock the aiohttp ClientSession and response
-        with patch("aiohttp.ClientSession.get", return_value=mock_response):
-            await monitor.check_service("http://service1", "storage_service_1")
-            self.assertEqual(manager.service_statuses["storage_service_1"], ServiceStatus.UNAVAILABLE)
+        # check_service hívása és állapot ellenőrzése
+        await monitor.check_service("http://service1", "storage_service_1")
+        self.assertEqual(manager.service_statuses["storage_service_1"], ServiceStatus.UNAVAILABLE)
 
 
 class TestServiceRouter(unittest.IsolatedAsyncioTestCase):
