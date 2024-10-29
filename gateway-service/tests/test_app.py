@@ -29,6 +29,34 @@ class TestServiceManager(unittest.TestCase):
         self.assertEqual(manager.service_statuses["storage_service_1"], ServiceStatus.AVAILABLE)
 
 
+class TestServiceMonitor(unittest.IsolatedAsyncioTestCase):
+    async def test_check_service_available(self):
+        manager = ServiceManager()
+        monitor = ServiceMonitor(manager)
+
+        # Mock a successful HTTP response
+        mock_response = AsyncMock()
+        mock_response.status = 200
+        mock_response.json.return_value = {"status": "OK"}
+
+        # Mock the aiohttp ClientSession and response
+        with patch("aiohttp.ClientSession.get", return_value=mock_response):
+            await monitor.check_service("http://service1", "storage_service_1")
+            self.assertEqual(manager.service_statuses["storage_service_1"], ServiceStatus.AVAILABLE)
+
+    async def test_check_service_unavailable(self):
+        manager = ServiceManager()
+        monitor = ServiceMonitor(manager)
+
+        # Mock a failed HTTP response (e.g., status 500)
+        mock_response = AsyncMock()
+        mock_response.status = 500
+
+        # Mock the aiohttp ClientSession and response
+        with patch("aiohttp.ClientSession.get", return_value=mock_response):
+            await monitor.check_service("http://service1", "storage_service_1")
+            self.assertEqual(manager.service_statuses["storage_service_1"], ServiceStatus.UNAVAILABLE)
+
 
 
 

@@ -45,6 +45,53 @@ class ServiceManager:
         self.service_statuses[service_name] = status
 
 
+class ServiceMonitor:
+    """Monitors services and updates their statuses."""
+
+    def __init__(self, manager):
+        self.manager = manager
+        self.func_run = True
+
+    async def check_service(self, url, service_name):
+        """Fetches the status of the service."""
+        async with aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=REQUEST_TIMEOUT)
+        ) as session:
+            try:
+                async with session.get(f"{url}/status") as response:
+                    if response.status == 200:
+                        json_response = await response.json()
+                        if json_response.get("status") == "OK":
+                            self.manager.update_service_status(
+                                service_name, ServiceStatus.AVAILABLE)
+                        else:
+                            self.manager.update_service_status(
+                                service_name, ServiceStatus.UNAVAILABLE)
+                    else:
+                        self.manager.update_service_status(
+                            service_name, ServiceStatus.UNAVAILABLE)
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                self.manager.update_service_status(
+                    service_name, ServiceStatus.UNAVAILABLE)
+                logging.error("Failed to check %s at %s: %s", service_name, url, e)
+
+    async def monitor_service(self, url, service_name):
+        """Continuously checks the service status."""
+        while self.func_run:
+            await self.check_service(url, service_name)
+            delay = MONITORING_INTERVAL_AVAILABLE if self.manager.service_statuses[
+                service_name] == ServiceStatus.AVAILABLE else MONITORING_INTERVAL_UNAVAILABLE
+            await asyncio.sleep(delay)
+
+    async def monitor_services(self):
+        """Starts monitoring all services."""
+        tasks = [
+            self.monitor_service(url, f"storage_service_{idx + 1}")
+            for idx, url in enumerate(self.manager.storage_services)
+        ]
+        await asyncio.gather(*tasks)
+
+
 
 
 def initialize_services(function_run=True):
