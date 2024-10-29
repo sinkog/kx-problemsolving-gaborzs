@@ -8,9 +8,28 @@ from unittest.mock import AsyncMock, patch
 from aioresponses import aioresponses
 from aiohttp import ClientError
 
-from src.app import (Flask, ServiceStatus, check_service,monitor_service,
+from src.app import (ServiceManager,
+                     Flask, ServiceStatus, check_service,monitor_service,
                      http_req_get_data, http_req_status,monitor_services,
                      initialize_services, logging, os, service_statuses)
+
+class TestServiceManager(unittest.TestCase):
+    @patch.dict(os.environ, {"STORAGE_SERVICES": "http://service1,http://service2"})
+    def test_initialize_services(self):
+        manager = ServiceManager()
+        self.assertEqual(manager.storage_services, ["http://service1", "http://service2"])
+
+    def test_update_service_status(self):
+        manager = ServiceManager()
+        manager.service_statuses = {
+            "storage_service_1": ServiceStatus.UNAVAILABLE,
+            "storage_service_2": ServiceStatus.UNAVAILABLE
+        }
+        manager.update_service_status("storage_service_1", ServiceStatus.AVAILABLE)
+        self.assertEqual(manager.service_statuses["storage_service_1"], ServiceStatus.AVAILABLE)
+
+
+
 
 
 class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
