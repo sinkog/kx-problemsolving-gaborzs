@@ -58,6 +58,38 @@ class TestServiceMonitor(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(manager.service_statuses["storage_service_1"], ServiceStatus.UNAVAILABLE)
 
 
+class TestServiceRouter(unittest.IsolatedAsyncioTestCase):
+    async def test_get_data_with_available_service(self):
+        manager = ServiceManager()
+        manager.storage_services = ["http://service1"]
+        manager.service_statuses["storage_service_1"] = ServiceStatus.AVAILABLE
+
+        router = ServiceRouter(manager)
+
+        # Mock a successful data response
+        mock_response = AsyncMock()
+        mock_response.status = 200
+        mock_response.json.return_value = {"data": "test_data"}
+
+        # Mock the aiohttp ClientSession and response
+        with patch("aiohttp.ClientSession.get", return_value=mock_response):
+            data, status = await router.get_data()
+            self.assertEqual(data, {"data": "test_data"})
+            self.assertEqual(status, 200)
+
+    async def test_get_data_with_no_available_service(self):
+        manager = ServiceManager()
+        manager.storage_services = ["http://service1"]
+        manager.service_statuses["storage_service_1"] = ServiceStatus.UNAVAILABLE
+
+        router = ServiceRouter(manager)
+
+        # Teszteljük, ha nincs elérhető szolgáltatás
+        data, status = await router.get_data()
+        self.assertEqual(data.json["error"], "No storage services available")
+        self.assertEqual(status, 503)
+
+
 
 
 class TestServiceMonitoring(unittest.IsolatedAsyncioTestCase):
