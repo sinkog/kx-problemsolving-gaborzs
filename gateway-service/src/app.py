@@ -25,6 +25,27 @@ class ServiceStatus(Enum):
     AVAILABLE = "available"
     UNAVAILABLE = "unavailable"
 
+class ServiceManager:
+    """ managed the service and service's state"""
+
+    def __init__(self):
+        self.storage_services = self.initialize_services()
+        self.service_statuses = {
+            f"storage_service_{idx + 1}": ServiceStatus.UNAVAILABLE
+            for idx in range(len(self.storage_services))
+        }
+
+    def initialize_services(self):
+        """Load the service's urls from os.env"""
+        storage_services = os.getenv("STORAGE_SERVICES", "")
+        return storage_services.split(",") if storage_services else []
+
+    def update_service_status(self, service_name, status):
+        """Update service's state"""
+        self.service_statuses[service_name] = status
+
+
+
 
 def initialize_services(function_run=True):
     """ gateway initializer """
