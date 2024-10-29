@@ -5,6 +5,7 @@ import asyncio
 import logging
 import os
 from enum import Enum
+from threading import Thread
 
 import aiohttp
 from flask import Flask, jsonify
@@ -62,7 +63,7 @@ class ServiceMonitor:
                 async with session.get(f"{url}/status") as response:
                     if response.status == 200:
                         json_response = await response.json()
-                        if json_response.get("status") == "OK":
+                        if json_response.get("state") == "OK":
                             logging.debug("Service available: 200/OK")
                             self.manager.update_service_status(
                                 service_name, ServiceStatus.AVAILABLE)
@@ -159,9 +160,13 @@ def http_req_status():
 @app.route("/data", methods=["GET"])
 async def http_req_get_data():
     """Attempts to fetch data from one of the available services."""
-    return await service_router.get_data()
+    _, _, data = await service_router.get_data()
+    return data
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.create_task(service_monitor.monitor_services())
-    app.run(host="0.0.0.0", port=5000)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)  # Set the new event loop as the current loop
+
+    monitor_thread = Thread(target=lambda: asyncio.run(service_monitor.monitor_services()))
+    monitor_thread.start()
+    app.run(host="0.0.0.0", port=5000, debug=True)
