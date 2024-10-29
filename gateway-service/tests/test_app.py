@@ -42,7 +42,7 @@ class TestServiceMonitor(unittest.IsolatedAsyncioTestCase):
         # Mock a successful HTTP response
         mock_response = AsyncMock()
         mock_response.status = 200
-        mock_response.json = AsyncMock(return_value={"status": "OK"})
+        mock_response.json = AsyncMock(return_value={"state": "OK"})
         mock_get.return_value.__aenter__.return_value = mock_response
 
         # Call check_service and verify status
