@@ -12,7 +12,7 @@ from flask import Flask, jsonify
 
 # Configuring the logger
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, os.getenv('LOG_LEVEL', 'INFO').upper(), logging.INFO),
     format="%(asctime)s - %(levelname)s - %(name)s/%(funcName)s: %(message)s",
 )
 
@@ -46,6 +46,7 @@ class ServiceManager:
     def update_service_status(self, service_name, status):
         """Updates the status of a specific service."""
         self.service_statuses[service_name] = status
+        logging.debug("update_service_status %s:%s",service_name,status)
 
 class ServiceMonitor:
     """Monitors services and updates their statuses."""
