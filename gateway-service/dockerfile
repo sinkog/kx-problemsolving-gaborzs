@@ -16,6 +16,12 @@ RUN echo "Installing dependencies..." && \
     echo "Dependencies installed."
 
 # Run code quality checks
+RUN echo "Running code checks..." && \
+    isort --check-only src/app.py && \
+    pylint src/ && \
+    echo "Code checks completed successfully."
+
+# Run code quality checks
 RUN echo "Running unit test..." && \
     python -m unittest tests/test_app.py && \
     echo "Unit test completed successfully"
