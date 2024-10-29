@@ -220,3 +220,22 @@ class TestServiceRouter(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(str(url), "http://service2/data")
         self.assertEqual(data, {"data": "test_data"})
         self.assertEqual(status, 200)
+
+    async def test_get_status(self):
+        """Tests that get_status returns the correct service statuses."""
+        manager = ServiceManager()
+        manager.storage_services = [
+            "http://service1", "http://service2", "http://service3",
+            "http://service4", "http://service5"
+        ]
+        manager.service_statuses = {
+            "storage_service_1": ServiceStatus.AVAILABLE,
+            "storage_service_2": ServiceStatus.AVAILABLE,
+            "storage_service_3": ServiceStatus.UNAVAILABLE,
+            "storage_service_4": ServiceStatus.AVAILABLE,
+            "storage_service_5": ServiceStatus.UNAVAILABLE,
+        }
+        router = ServiceRouter(manager)
+
+        self.assertEqual(router.get_status(), {name: status.value for name, status in manager.service_statuses.items()})
+
