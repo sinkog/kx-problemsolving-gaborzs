@@ -14,6 +14,10 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(funcName)s - %(message)s",
 )
 
+MONITORING_INTERVAL_AVAILABLE = int(os.getenv("MONITORING_INTERVAL_AVAILABLE", "1"))
+MONITORING_INTERVAL_UNAVAILABLE = int(os.getenv("MONITORING_INTERVAL_UNAVAILABLE", "5"))
+REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "3"))
+
 
 app = Flask(__name__)
 storage_services = []
@@ -62,12 +66,15 @@ class ServiceMonitor:
                     if response.status == 200:
                         json_response = await response.json()
                         if json_response.get("status") == "OK":
+                            logging.debug("200/OK")
                             self.manager.update_service_status(
                                 service_name, ServiceStatus.AVAILABLE)
                         else:
+                            logging.debug("200/<>OK")
                             self.manager.update_service_status(
                                 service_name, ServiceStatus.UNAVAILABLE)
                     else:
+                        logging.debug("%s <>200",response.status)
                         self.manager.update_service_status(
                             service_name, ServiceStatus.UNAVAILABLE)
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
