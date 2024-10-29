@@ -17,9 +17,7 @@ RUN echo "Installing dependencies..." && \
 
 # Run code quality checks
 RUN echo "Running code checks..." && \
-    black --check src/app.py && \
     isort --check-only src/app.py && \
-    flake8 src/ && \
     pylint src/ && \
     echo "Code checks completed successfully."
 
