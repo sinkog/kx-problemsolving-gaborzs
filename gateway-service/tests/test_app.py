@@ -67,6 +67,42 @@ class TestServiceMonitor(unittest.IsolatedAsyncioTestCase):
         await monitor.check_service("http://service1", "storage_service_1")
         self.assertEqual(manager.service_statuses["storage_service_1"], ServiceStatus.UNAVAILABLE)
 
+    @patch.dict(os.environ, {"STORAGE_SERVICES": "http://service1,http://service2"})
+    @patch("aiohttp.ClientSession.get")
+    async def test_check_service_timeout_error0(self, mock_get):
+        manager = ServiceManager()
+        monitor = ServiceMonitor(manager)
+
+        # Mock a successful HTTP response
+        mock_response = AsyncMock()
+        mock_response.status = 404
+        mock_get.return_value.__aenter__.return_value = mock_response
+        mock_get.side_effect = asyncio.TimeoutError("Kérés időtúllépés")
+
+        # Call check_service and verify status
+        logging.debug("Checking if 'http://service1' is available but state:error.")
+        await monitor.check_service("http://service1", "storage_service_1")
+
+        self.assertEqual(manager.service_statuses["storage_service_1"], ServiceStatus.UNAVAILABLE)
+
+    @patch.dict(os.environ, {"STORAGE_SERVICES": "http://service1,http://service2"})
+    @patch("aiohttp.ClientSession.get")
+    async def test_check_service_client_error0(self, mock_get):
+        manager = ServiceManager()
+        monitor = ServiceMonitor(manager)
+
+        # Mock a successful HTTP response
+        mock_response = AsyncMock()
+        mock_response.status = 404
+        mock_get.return_value.__aenter__.return_value = mock_response
+        mock_get.side_effect = aiohttp.ClientError("Client Error")
+
+        # Call check_service and verify status
+        logging.debug("Checking if 'http://service1' is available but state:error.")
+        await monitor.check_service("http://service1", "storage_service_1")
+
+        self.assertEqual(manager.service_statuses["storage_service_1"], ServiceStatus.UNAVAILABLE)
+
 
 class TestServiceRouter(unittest.IsolatedAsyncioTestCase):
     """ Tests: ServiceRouter """
