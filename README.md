@@ -22,6 +22,20 @@ The services can be implemented using any programming language.
 * We would like to have your solution in form of a Pull Request into the main repository
 * _What should the Gateway do if no Storage Services are running?_
 
+## Handling No Available Storage Services
+
+If no Storage Services are running, the Gateway should handle the situation as follows:
+
+1. **Return an Error Response**: The Gateway should respond with an appropriate error (e.g., HTTP 503 Service Unavailable) to inform clients that no storage services are currently available. This will allow clients to recognize the temporary issue and retry later if necessary.
+
+2. **Logging**: Log the event to provide visibility into the issue, helping with diagnostics and troubleshooting.
+
+3. **Retry Mechanism**: If feasible, the Gateway should implement a retry mechanism to periodically check if any Storage Services have become available, resuming normal operations as soon as possible.
+
+4. **Notification (Optional)**: If supported, send a notification to the system administrators to inform them that one or more Storage Services are down.
+
+This approach ensures that the Gateway handles service downtimes gracefully without disrupting the overall service.
+
 ## Decision Log
 You can find the decision log for this project at the following link: [Decision Log](docs/DECISION_LOG.md).
 
